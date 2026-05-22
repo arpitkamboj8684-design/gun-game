@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>Gun Shooter Game</title>
+
+<style>
+
+body{
+    margin:0;
+    overflow:hidden;
+    background:black;
+    font-family:Arial;
+    color:white;
+    text-align:center;
+}
+
+h1{
+    color:red;
+    text-shadow:0 0 20px red;
+}
+
+#info{
+    width:800px;
+    margin:auto;
+    display:flex;
+    justify-content:space-between;
+    font-size:25px;
+    margin-bottom:10px;
+}
+
+#gameArea{
+    width:800px;
+    height:600px;
+    background:#111;
+    margin:auto;
+    position:relative;
+    overflow:hidden;
+    border:4px solid red;
+    box-shadow:0 0 25px red;
+}
+
+#player{
+    width:60px;
+    height:60px;
+    background:lime;
+    position:absolute;
+    bottom:20px;
+    left:370px;
+    border-radius:10px;
+    box-shadow:0 0 20px lime;
+}
+
+.enemy{
+    width:50px;
+    height:50px;
+    background:red;
+    position:absolute;
+    top:0;
+    border-radius:10px;
+    box-shadow:0 0 15px red;
+}
+
+.bullet{
+    width:10px;
+    height:25px;
+    background:yellow;
+    position:absolute;
+    border-radius:10px;
+    box-shadow:0 0 15px yellow;
+}
+
+.explosion{
+    width:60px;
+    height:60px;
+    background:orange;
+    position:absolute;
+    border-radius:50%;
+    box-shadow:0 0 30px yellow;
+}
+
+#gameOverScreen,
+#winScreen{
+    display:none;
+    position:absolute;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,0.9);
+    justify-content:center;
+    align-items:center;
+    flex-direction:column;
+}
+
+#gameOverScreen h1{
+    color:red;
+    font-size:70px;
+}
+
+#winScreen h1{
+    color:lime;
+    font-size:70px;
+}
+
+button{
+    padding:15px 30px;
+    font-size:22px;
+    border:none;
+    border-radius:10px;
+    cursor:pointer;
+    background:red;
+    color:white;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>GUN SHOOTER</h1>
+
+<div id="info">
+
+<div>
+Score:
+<span id="score">0</span>
+</div>
+
+<div>
+Lives:
+<span id="lives">3</span>
+</div>
+
+<div>
+Level:
+<span id="level">1</span>
+</div>
+
+</div>
+
+<div id="gameArea">
+
+<div id="player"></div>
+
+<div id="gameOverScreen">
+
+<h1>GAME OVER</h1>
+
+<button onclick="restartGame()">
+Restart
+</button>
+
+</div>
+
+<div id="winScreen">
+
+<h1>YOU WIN!</h1>
+
+<button onclick="restartGame()">
+Play Again
+</button>
+
+</div>
+
+</div>
+
+<script>
+
+let gameArea = document.getElementById("gameArea");
+
+let player = document.getElementById("player");
+
+let score = 0;
+
+let lives = 3;
+
+let level = 1;
+
+let enemySpeed = 4;
+
+let playerX = 370;
+
+let gameRunning = true;
+
+
+
+document.addEventListener("keydown", function(event){
+
+    if(!gameRunning){
+        return;
+    }
+
+    if(event.key == "ArrowLeft"){
+
+        playerX -= 25;
+
+    }
+
+    if(event.key == "ArrowRight"){
+
+        playerX += 25;
+
+    }
+
+    if(playerX < 0){
+
+        playerX = 0;
+
+    }
+
+    if(playerX > 740){
+
+        playerX = 740;
+
+    }
+
+    player.style.left = playerX + "px";
+
+    if(event.key == " "){
+
+        shoot();
+
+    }
+
+});
+
+
+
+function shoot(){
+
+    let bullet = document.createElement("div");
+
+    bullet.classList.add("bullet");
+
+    gameArea.appendChild(bullet);
+
+    let bulletY = 520;
+
+    bullet.style.left = (playerX + 25) + "px";
+
+    bullet.style.top = bulletY + "px";
+
+    let bulletMove = setInterval(function(){
+
+        bulletY -= 20;
+
+        bullet.style.top = bulletY + "px";
+
+        let enemies = document.querySelectorAll(".enemy");
+
+        enemies.forEach(function(enemy){
+
+            let enemyTop = enemy.offsetTop;
+
+            let enemyLeft = enemy.offsetLeft;
+
+            let bulletLeft = bullet.offsetLeft;
+
+            if(
+                bulletY < enemyTop + 50 &&
+                bulletY > enemyTop &&
+                bulletLeft > enemyLeft &&
+                bulletLeft < enemyLeft + 50
+            ){
+
+                createExplosion(enemyLeft, enemyTop);
+
+                enemy.remove();
+
+                bullet.remove();
+
+                clearInterval(bulletMove);
+
+                score++;
+
+                document.getElementById("score").innerHTML = score;
+
+                levelSystem();
+
+            }
+
+        });
+
+        if(bulletY < 0){
+
+            bullet.remove();
+
+            clearInterval(bulletMove);
+
+        }
+
+    },30);
+
+}
+
+
+
+function createEnemy(){
+
+    if(!gameRunning){
+        return;
+    }
+
+    let enemy = document.createElement("div");
+
+    enemy.classList.add("enemy");
+
+    gameArea.appendChild(enemy);
+
+    let enemyX = Math.random() * 750;
+
+    enemy.style.left = enemyX + "px";
+
+    let enemyY = 0;
+
+    let enemyMove = setInterval(function(){
+
+        if(!gameRunning){
+
+            clearInterval(enemyMove);
+
+            return;
+
+        }
+
+        enemyY += enemySpeed;
+
+        enemy.style.top = enemyY + "px";
+
+        let playerLeft = player.offsetLeft;
+
+        if(
+            enemyY + 50 > 530 &&
+            enemyX < playerLeft + 60 &&
+            enemyX + 50 > playerLeft
+        ){
+
+            createExplosion(enemyX, enemyY);
+
+            enemy.remove();
+
+            clearInterval(enemyMove);
+
+            lives--;
+
+            document.getElementById("lives").innerHTML = lives;
+
+            if(lives <= 0){
+
+                gameOver();
+
+            }
+
+        }
+
+        if(enemyY > 600){
+
+            enemy.remove();
+
+            clearInterval(enemyMove);
+
+        }
+
+    },40);
+
+}
+
+
+
+function createExplosion(x,y){
+
+    let explosion = document.createElement("div");
+
+    explosion.classList.add("explosion");
+
+    explosion.style.left = x + "px";
+
+    explosion.style.top = y + "px";
+
+    gameArea.appendChild(explosion);
+
+    setTimeout(function(){
+
+        explosion.remove();
+
+    },300);
+
+}
+
+
+
+function levelSystem(){
+
+    if(score >= level * 10 && level < 10){
+
+        level++;
+
+        enemySpeed++;
+
+        document.getElementById("level").innerHTML = level;
+
+    }
+
+    if(score >= 100){
+
+        winGame();
+
+    }
+
+}
+
+
+
+function gameOver(){
+
+    gameRunning = false;
+
+    document.getElementById("gameOverScreen").style.display = "flex";
+
+}
+
+
+
+function winGame(){
+
+    gameRunning = false;
+
+    document.getElementById("winScreen").style.display = "flex";
+
+}
+
+
+
+function restartGame(){
+
+    location.reload();
+
+}
+
+
+
+setInterval(createEnemy,1000);
+
+</script>
+
+</body>
+
+</html>
